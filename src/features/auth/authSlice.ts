@@ -1,19 +1,21 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { RootState } from '../../app/store'
-import { fetchLogin, fetchRegister, fetchUser } from './authApi'
+import { fetchLogin, fetchRegister, fetchUpdate, fetchUser } from './authApi'
 
 type User = any
 
 export interface AuthState {
   isLoggedIn: boolean
-  error: string | null | undefined
+  loginError: string | null | undefined
+  registerError: string | null | undefined
   user: User | null
 }
 
 const initialState: AuthState = {
   isLoggedIn: false,
   user: null,
-  error: null
+  loginError: null,
+  registerError: null
 }
 
 export const getUser = createAsyncThunk('auth/getUser', async (id: number) => {
@@ -28,11 +30,23 @@ export const login = createAsyncThunk('auth/login', async ({ password, email }: 
   return response
 })
 
-export const register = createAsyncThunk('auth/register', async ({ password, email }: { password: string; email: string }) => {
+export const register = createAsyncThunk('auth/register', async ({ password, email }: { password: string; email: string }, { dispatch }) => {
   const response = await fetchRegister(email, password)
 
+  if (response.id) {
+    dispatch(getUser(response.id))
+  }
   return response
 })
+
+export const update = createAsyncThunk(
+  'auth/update',
+  async ({ email, firstName, lastName, id }: { email: string; firstName: string; lastName: string; id: number }) => {
+    const response = await fetchUpdate(email, firstName, lastName, id)
+
+    return response
+  }
+)
 
 export const authSlice = createSlice({
   name: 'auth',
@@ -40,45 +54,43 @@ export const authSlice = createSlice({
   reducers: {
     logOut: state => {
       state.isLoggedIn = false
+      state.user = null
+      state.registerError = null
+      state.loginError = null
       localStorage.removeItem('token')
     }
   },
   extraReducers: builder => {
     builder
-      .addCase(getUser.pending, state => {
-        state.error = null
-      })
       .addCase(getUser.fulfilled, (state, action) => {
-        state.error = null
-        state.user = action.payload
-      })
-      .addCase(getUser.rejected, (state, action) => {
-        state.error = 'error while fetching user'
+        state.user = action.payload.data
       })
       .addCase(login.pending, state => {
-        state.error = null
+        state.loginError = null
       })
       .addCase(login.fulfilled, (state, action) => {
-        state.error = null
+        state.loginError = null
         state.isLoggedIn = true
         state.user = { email: action.payload.email, id: action.payload.id }
         localStorage.setItem('token', action.payload.token)
       })
       .addCase(login.rejected, (state, action) => {
-        state.error = action.error.message
+        state.loginError = action.error.message
       })
       .addCase(register.pending, state => {
-        state.error = null
+        state.registerError = null
       })
       .addCase(register.fulfilled, (state, action) => {
-        state.error = null
+        state.registerError = null
         state.isLoggedIn = true
         state.user = { id: action.payload.id }
         localStorage.setItem('token', action.payload.token)
       })
       .addCase(register.rejected, (state, action) => {
-        console.log(action.payload)
-        state.error = 'error while registering'
+        state.registerError = action.error.message
+      })
+      .addCase(update.fulfilled, (state, action) => {
+        state.user = action.payload
       })
   }
 })
@@ -87,5 +99,7 @@ export const { logOut } = authSlice.actions
 
 export const selectLoggedIn = (state: RootState) => state.auth.isLoggedIn
 export const selectUser = (state: RootState) => state.auth.user
+export const selectLoginError = (state: RootState) => state.auth.loginError
+export const selectRegisterError = (state: RootState) => state.auth.registerError
 
 export default authSlice.reducer

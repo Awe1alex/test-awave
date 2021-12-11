@@ -1,5 +1,11 @@
 import React from 'react'
+import UserProfile from '../features/auth/UserProfile'
 
 export default function Profile() {
-  return <div>Profile</div>
+  return (
+    <>
+      <h1>Profile</h1>
+      <UserProfile />
+    </>
+  )
 }

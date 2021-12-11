@@ -50,3 +50,22 @@ export const fetchRegister = async (email: string, password: string) => {
     return Promise.reject(err)
   }
 }
+
+export const fetchUpdate = async (email: string, firstName: string, lastName: string, id: number) => {
+  try {
+    const resp = await fetch(`https://reqres.in/api/user/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, first_name: firstName, last_name: lastName })
+    })
+
+    const respJson = await resp.json()
+    if (resp.ok) {
+      return respJson
+    } else {
+      throw respJson.error
+    }
+  } catch (err) {
+    return Promise.reject(err)
+  }
+}

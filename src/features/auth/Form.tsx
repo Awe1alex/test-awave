@@ -1,6 +1,7 @@
 import React from 'react'
 import { useDispatch } from 'react-redux'
-import { login, register } from './authSlice'
+import { useAppSelector } from '../../app/hooks'
+import { login, register, selectLoginError, selectRegisterError } from './authSlice'
 
 type FormProps = {
   type: 'login' | 'register'
@@ -8,6 +9,9 @@ type FormProps = {
 
 export default function Form({ type }: FormProps) {
   const dispatch = useDispatch()
+
+  const loginError = useAppSelector(selectLoginError)
+  const registerError = useAppSelector(selectRegisterError)
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -37,20 +41,36 @@ export default function Form({ type }: FormProps) {
           value={email}
           onChange={e => setEmail(e.target.value)}
         />
-        <div id='emailHelp' className='form-text'>
-          We'll never share your email with anyone else.
-        </div>
+        <EmailError error={type === 'login' ? loginError : registerError} />
       </div>
       <div className='mb-3'>
         <label htmlFor='exampleInputPassword1' className='form-label'>
           Password
         </label>
         <input type='password' className='form-control' id='exampleInputPassword1' value={password} onChange={e => setPassword(e.target.value)} />
+        <PasswordError error={type === 'login' ? loginError : registerError} />
       </div>
 
       <button type='submit' className='btn btn-primary'>
         Submit
       </button>
+      <GlobalError error={type === 'login' ? loginError : registerError} />
     </form>
   )
+}
+
+type ErrorProps = {
+  error: string | null | undefined
+}
+
+const EmailError = ({ error }: ErrorProps) => {
+  return error?.includes('email') ? <div className='form-text text-danger'>{error}</div> : <div className='form-text'>Please enter email</div>
+}
+
+const PasswordError = ({ error }: ErrorProps) => {
+  return error?.includes('password') ? <div className='form-text text-danger'>{error}</div> : <div className='form-text'>Please enter password</div>
+}
+
+const GlobalError = ({ error }: ErrorProps) => {
+  return error?.indexOf('email') === -1 && error?.indexOf('password') === -1 ? <div className='form-text text-danger mb-2'>{error}</div> : null
 }
